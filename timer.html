@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Esemény Időkövető</title>
+  <style>
+    /* –– alapelrendezés és tipográfia –– */
+    html,body{margin:0;height:100%;font-family:Arial,Helvetica,sans-serif;background:#f4f4f4;color:#222;display:flex;flex-direction:column}
+    #current-item{flex:1 1 auto;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:0 5vw}
+    #item-title{font-size:6vw;font-weight:600;line-height:1.1;word-break:break-word}
+    #timer{font-size:14vw;font-weight:700;margin-top:0.1em}
+    .progress-bar{width:80%;height:1.2vh;background:#d0d0d0;border-radius:6px;overflow:hidden;margin-top:2vh}
+    .progress{height:100%;background:#28a745;width:0%}
+    .controls,.upcoming{display:flex;justify-content:center;flex-wrap:wrap;gap:10px;padding:15px 5vw}
+    button{padding:10px 22px;font-size:1rem;border:none;border-radius:6px;cursor:pointer;background:#007bff;color:#fff}
+    button:disabled{background:#888;cursor:not-allowed}
+    h2{text-align:center;margin:0.5em 0 0.2em}
+    .upcoming-item{margin:3px 0}
+    @media(max-width:600px){#item-title{font-size:8vw}#timer{font-size:18vw}}
+  </style>
+</head>
+<body>
+
+  <div id="current-item">
+    <div id="item-title">Betöltés…</div>
+    <div id="timer">00:00</div>
+    <div class="progress-bar"><div class="progress" id="progress"></div></div>
+  </div>
+
+  <div class="controls">
+    <button onclick="previousItem()">⏮ Előző</button>
+    <button onclick="toggleTimer()" id="playPauseBtn">▶ Indítás</button>
+    <button onclick="nextItem()">⏭ Következő</button>
+    <button onclick="adjustTime(1)">+1 perc</button>
+    <button onclick="adjustTime(-1)">−1 perc</button>
+  </div>
+
+  <h2>Következő programpontok</h2>
+  <div class="upcoming" id="upcoming-list"></div>
+
+  <script>
+    /* –– PROGRAMTÁBLA: A felhasználó által megadott menetrend –– */
+    const agenda = [
+      { startTime:"19:45", title:"ÉNEK – Csiszér László",                                   duration:15 },
+      { startTime:"20:00", title:"KÖSZÖNTÉS - Márton József főesperes", duration:10 },
+      { startTime:"20:10", title:"TANÚSÁGTÉTELEK – Gergely Dávid és Tóth Jácinta",          duration:30 },
+      { startTime:"20:40", title:"ÉNEK – Csiszér László",                                   duration:10 },
+      { startTime:"20:50", title:"BESZÉLGETÉS A PÜSPÖK ATYÁVAL", duration:30 },
+      { startTime:"21:20", title:"ÉNEK – Csiszér László",                                   duration:10 },
+      { startTime:"21:30", title:"SZENTSÉGIMÁDÁS ",   duration:45 },
+      { startTime:"22:15", title:"ÉNEK – DICSŐÍTÉS / IMA – GYÓNTATÁS ", duration:45 },
+      { startTime:"23:00", title:"AGAPÉ – szülők",                                          duration:60 } // módosítható
+    ];
+
+    /* –– Állapot –– */
+    let currentIndex = 0;
+    let remainingSeconds = agenda[0].duration * 60;
+    let timer = null;
+    let isRunning = false;
+
+    /* –– Megjelenítés –– */
+    function render() {
+      const item = agenda[currentIndex];
+      const timerElement = document.getElementById("timer");
+      document.getElementById("item-title").innerText = item.title;
+      timerElement.innerText = formatTime(remainingSeconds);
+      // Change text color to red when 1 minute or less remains
+      if (remainingSeconds <= 60) {
+        timerElement.style.color = '#dc3545'; // Red color
+      } else {
+        timerElement.style.color = ''; // Reset to default color
+      }
+      const pct = ((item.duration * 60 - remainingSeconds) / (item.duration * 60)) * 100;
+      document.getElementById("progress").style.width = pct + "%";
+
+      const list = document.getElementById("upcoming-list");
+      list.innerHTML = '';
+      for (let i = currentIndex + 1; i < agenda.length; i++) {
+        const div = document.createElement("div");
+        div.className = "upcoming-item";
+        div.textContent = `• ${agenda[i].title} (${agenda[i].duration} perc)`;
+        list.appendChild(div);
+      }
+    }
+
+    /* –– Segédfüggvények –– */
+    const formatTime = s => `${String(Math.floor(s / 60)).padStart(2,'0')}:${String(s % 60).padStart(2,'0')}`;
+
+    /* –– Lejátszás / szünet –– */
+    function toggleTimer() {
+      if (isRunning) { stopTimer(); return; }
+      timer = setInterval(() => {
+        if (remainingSeconds > 0) { 
+          remainingSeconds--; 
+          render(); 
+        } else { 
+          stopTimer();
+          // Flash the screen briefly to indicate time's up
+          document.body.style.transition = 'background 0.5s';
+          document.body.style.background = '#ffebee';
+          setTimeout(() => {
+            document.body.style.background = '#f4f4f4';
+            // Move to next item after the flash
+            if (currentIndex < agenda.length - 1) {
+              nextItem();
+              // Auto-start the next timer
+              if (!isRunning) toggleTimer();
+            }
+          }, 500);
+        }
+      }, 1000);
+      isRunning = true;
+      document.getElementById("playPauseBtn").innerText = "⏸ Szünet";
+    }
+    function stopTimer() { clearInterval(timer); isRunning=false; document.getElementById("playPauseBtn").innerText="▶ Indítás"; }
+
+    /* –– Navigáció –– */
+    function nextItem() {
+      if (currentIndex < agenda.length - 1) {
+        currentIndex++; 
+        remainingSeconds = agenda[currentIndex].duration * 60; 
+        stopTimer(); 
+        render();
+        // Auto-start the timer when moving to next item
+        if (!isRunning) toggleTimer();
+      }
+    }
+    function previousItem() {
+      if (currentIndex > 0) {
+        currentIndex--; 
+        remainingSeconds = agenda[currentIndex].duration * 60; 
+        stopTimer(); 
+        render();
+        // Auto-start the timer when moving to previous item
+        if (!isRunning) toggleTimer();
+      }
+    }
+
+    /* –– Idő állítás –– */
+    function adjustTime(mins) { remainingSeconds = Math.max(0, remainingSeconds + mins * 60); render(); }
+
+    render();
+  </script>
+</body>
+</html>
