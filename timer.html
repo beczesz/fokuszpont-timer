@@ -5,6 +5,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Esemény Időkövető</title>
   <style>
+    /* Version display */
+    .version {
+      position: fixed;
+      bottom: 10px;
+      right: 15px;
+      font-size: 0.8rem;
+      color: var(--text-color);
+      opacity: 0.6;
+      transition: opacity 0.3s;
+    }
+    .version:hover {
+      opacity: 1;
+    }
+    
     /* Theme variables */
     :root {
       --bg-color: #1a1a1a;
@@ -85,8 +99,13 @@
 
   <h2>Következő programpontok</h2>
   <div class="upcoming" id="upcoming-list"></div>
+  
+  <!-- Version number display -->
+  <div class="version" id="version-display">v1.1</div>
 
   <script>
+    // App version
+    const APP_VERSION = '1.1';
     /* –– PROGRAMTÁBLA: A felhasználó által megadott menetrend –– */
     const agenda = [
       { startTime:"19:45", title:"ÉNEK – Csiszér László",                                   duration:15 },
