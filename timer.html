@@ -204,10 +204,14 @@
         } else { 
           stopTimer();
           // Flash the screen briefly to indicate time's up
+          const flashColor = document.documentElement.getAttribute('data-theme') === 'light' ? '#ffebee' : '#3a1a1a';
+          const originalBg = getComputedStyle(document.documentElement).getPropertyValue('--bg-color').trim();
+          
           document.body.style.transition = 'background 0.5s';
-          document.body.style.background = '#ffebee';
+          document.body.style.background = flashColor;
+          
           setTimeout(() => {
-            document.body.style.background = '#f4f4f4';
+            document.body.style.background = originalBg;
             // Move to next item after the flash
             if (currentIndex < agenda.length - 1) {
               nextItem();
